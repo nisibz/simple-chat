@@ -6,6 +6,7 @@
     <title>Chat</title>
   </head>
   <body>
+    <input type="text" id="senderInput" placeholder="Type your name..." />
     <input type="text" id="roomInput" placeholder="Type your room..." />
     <button id="joinRoomButton">join</button>
     <input type="text" id="messageInput" placeholder="Type your message..." />
@@ -17,6 +18,7 @@
     <script>
       const socket = io();
 
+      const senderInput = document.getElementById("senderInput");
       const roomInput = document.getElementById("roomInput");
       const joinRoomButton = document.getElementById("joinRoomButton");
 
@@ -30,14 +32,17 @@
       const messages = document.getElementById("messages");
 
       sendButton.addEventListener("click", () => {
+        const sender = senderInput.value;
         const message = messageInput.value;
-        socket.emit("chat message", message, roomInput.value);
+        const created = new Date();
+        const newMsg = { sender: sender, message: message, created: created };
+        socket.emit("chat message", newMsg, roomInput.value);
         messageInput.value = "";
       });
 
       socket.on("chat message", (msg) => {
         const li = document.createElement("li");
-        li.textContent = msg;
+        li.textContent = JSON.stringify(msg);
         messages.appendChild(li);
       });
     </script>

@@ -15,7 +15,9 @@ app.get("/chat", (_req: Request, res: Response) => {
   res.sendFile(__dirname + "/chat.html");
 });
 
-let roomMessages: { [key: string]: string[] } = {};
+let roomMessages: {
+  [key: string]: { sender: string; message: string; created: Date }[];
+} = {};
 
 io.on("connection", (socket: Socket) => {
   console.log("A user connected");
@@ -30,13 +32,16 @@ io.on("connection", (socket: Socket) => {
     }
   });
 
-  socket.on("chat message", (msg: string, room: string) => {
-    if (!roomMessages[room]) {
-      roomMessages[room] = [];
-    }
-    roomMessages[room].push(msg);
-    io.to(room).emit("chat message", msg);
-  });
+  socket.on(
+    "chat message",
+    (msg: { sender: string; message: string; created: Date }, room: string) => {
+      if (!roomMessages[room]) {
+        roomMessages[room] = [];
+      }
+      roomMessages[room].push(msg);
+      io.to(room).emit("chat message", msg);
+    },
+  );
 
   socket.on("disconnect", () => {
     console.log("User disconnected");

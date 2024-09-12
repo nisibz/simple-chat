@@ -1,5 +1,5 @@
 {
-  "name": "node-ws",
+  "name": "simple-chat",
   "version": "1.0.0",
   "main": "dist/app.js",
   "scripts": {
