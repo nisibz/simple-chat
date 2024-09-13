@@ -8,10 +8,6 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 app.get("/", (_req: Request, res: Response) => {
-  res.send("Hello, TypeScript!");
-});
-
-app.get("/chat", (_req: Request, res: Response) => {
   res.sendFile(__dirname + "/chat.html");
 });
 
