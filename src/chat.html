@@ -6,7 +6,7 @@
     <title>Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="bg-gray-100 h-screen flex items-center justify-center">
+  <body class="bg-gray-100 h-screen flex items-center justify-center p-10">
     <div
       id="homePage"
       class="bg-white shadow-lg rounded-lg p-6 w-full max-w-md space-y-4"
@@ -69,6 +69,30 @@
           </svg>
         </button>
         Chat Room
+        <button
+          id="clearChatButton"
+          class="absolute right-4 top-1/2 transform -translate-y-1/2 group"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-600 hover:text-gray-800"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 6h18M9 6v12m6-12v12M4 6l1-1h14l1 1M5 6v12a2 2 0 002 2h10a2 2 0 002-2V6"
+            />
+          </svg>
+          <span
+            class="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2"
+          >
+            Remove chat
+          </span>
+        </button>
       </div>
       <div id="roomName" class="text-center text-sm text-gray-500 p-2"></div>
       <ul
@@ -106,6 +130,7 @@
       const messageInput = document.getElementById("messageInput");
       const sendButton = document.getElementById("sendButton");
       const messages = document.getElementById("messages");
+      const clearChatButton = document.getElementById("clearChatButton");
 
       joinRoomButton.addEventListener("click", () => {
         const room = roomInput.value;
@@ -126,6 +151,13 @@
         messageInput.value = "";
       });
 
+      clearChatButton.addEventListener("click", () => {
+        while (messages.firstChild) {
+          messages.removeChild(messages.firstChild);
+        }
+        socket.emit("clear chat", roomInput.value);
+      });
+
       socket.on("chat message", (msg) => {
         const li = document.createElement("li");
         const currentUser = senderInput.value;
@@ -142,6 +174,14 @@
       document.getElementById("backButton").addEventListener("click", () => {
         const room = roomInput.value;
         socket.emit("leave room", room);
+        chatPage.classList.add("hidden");
+        homePage.classList.remove("hidden");
+      });
+
+      socket.on("chat cleared", () => {
+        while (messages.firstChild) {
+          messages.removeChild(messages.firstChild);
+        }
         chatPage.classList.add("hidden");
         homePage.classList.remove("hidden");
       });

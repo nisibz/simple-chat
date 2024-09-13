@@ -27,11 +27,12 @@ io.on("connection", (socket: Socket) => {
 
   socket.on("join room", (room: string) => {
     socket.join(room);
-    if (roomMessages[room]) {
-      roomMessages[room].forEach((msg) => {
-        socket.emit("chat message", msg);
-      });
+    if (!roomMessages[room]) {
+      roomMessages[room] = [];
     }
+    roomMessages[room].forEach((msg) => {
+      socket.emit("chat message", msg);
+    });
     io.emit("room members", io.sockets.adapter.rooms.get(room)?.size || 0);
   });
 
@@ -52,6 +53,13 @@ io.on("connection", (socket: Socket) => {
       io.to(room).emit("chat message", msg);
     },
   );
+
+  socket.on("clear chat", (room: string) => {
+    if (roomMessages[room]) {
+      delete roomMessages[room];
+      io.to(room).emit("chat cleared");
+    }
+  });
 
   socket.on("disconnect", () => {
     onlineUsers--;
