@@ -113,7 +113,6 @@
           messages.removeChild(messages.firstChild);
         }
         socket.emit("join room", room);
-        roomName.textContent = `Room: ${room}`;
         homePage.classList.add("hidden");
         chatPage.classList.remove("hidden");
       });
@@ -141,6 +140,8 @@
       });
 
       document.getElementById("backButton").addEventListener("click", () => {
+        const room = roomInput.value;
+        socket.emit("leave room", room);
         chatPage.classList.add("hidden");
         homePage.classList.remove("hidden");
       });
@@ -160,8 +161,15 @@
         }
       }
 
+      validateForm();
+
       socket.on("online users", (users) => {
         onlineTotal.textContent = `Online users: ${users.count}`;
+      });
+
+      socket.on("room members", (members) => {
+        const room = roomInput.value;
+        roomName.textContent = `Room: ${room} (online: ${members})`;
       });
     </script>
   </body>

@@ -23,18 +23,23 @@ let onlineUsers: number = 0;
 
 io.on("connection", (socket: Socket) => {
   onlineUsers++;
-  console.log("A user connected");
-  console.log(`Online users: ${onlineUsers}`);
   io.emit("online users", { count: onlineUsers });
 
   socket.on("join room", (room: string) => {
     socket.join(room);
-    console.log(`User joined room: ${room}`);
     if (roomMessages[room]) {
       roomMessages[room].forEach((msg) => {
         socket.emit("chat message", msg);
       });
     }
+    io.emit("room members", io.sockets.adapter.rooms.get(room)?.size || 0);
+  });
+
+  socket.on("leave room", (room) => {
+    socket.leave(room);
+    socket
+      .to(room)
+      .emit("room members", io.sockets.adapter.rooms.get(room)?.size || 0);
   });
 
   socket.on(
@@ -51,10 +56,16 @@ io.on("connection", (socket: Socket) => {
   socket.on("disconnect", () => {
     onlineUsers--;
     io.emit("online users", { count: onlineUsers });
-    console.log("User disconnected");
+
+    // Notify all rooms about the updated member count
+    socket.rooms.forEach((room) => {
+      socket
+        .to(room)
+        .emit("room members", io.sockets.adapter.rooms.get(room)?.size || 0);
+    });
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.info(`Server is running on http://localhost:${PORT}`);
 });
