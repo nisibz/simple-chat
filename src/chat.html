@@ -22,7 +22,7 @@
           id="senderInput"
           placeholder="Type your name..."
           class="w-full px-4 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-b-2 focus:border-indigo-500"
-          oninput="validateForm()"
+          oninput="validateJoinRoomForm()"
         />
         <label for="roomInput" class="block text-sm font-medium text-gray-700"
           >Room</label
@@ -32,7 +32,7 @@
           id="roomInput"
           placeholder="Type your room..."
           class="w-full px-4 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-b-2 focus:border-indigo-500"
-          oninput="validateForm()"
+          oninput="validateJoinRoomForm()"
         />
         <button
           id="joinRoomButton"
@@ -107,6 +107,7 @@
           id="messageInput"
           placeholder="Type your message..."
           class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          oninput="validateSendMessageForm()"
         />
         <button
           id="sendButton"
@@ -144,11 +145,31 @@
 
       sendButton.addEventListener("click", () => {
         const sender = senderInput.value;
-        const message = messageInput.value;
+        const message = messageInput.value.trim();
         const created = new Date();
         const newMsg = { sender: sender, message: message, created: created };
         socket.emit("chat message", newMsg, roomInput.value);
         messageInput.value = "";
+        validateSendMessageForm();
+        messageInput.focus();
+      });
+
+      messageInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          sendButton.click();
+        }
+      });
+
+      senderInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          joinRoomButton.click();
+        }
+      });
+
+      roomInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          joinRoomButton.click();
+        }
       });
 
       clearChatButton.addEventListener("click", () => {
@@ -186,7 +207,7 @@
         homePage.classList.remove("hidden");
       });
 
-      function validateForm() {
+      function validateJoinRoomForm() {
         const senderInput = document.getElementById("senderInput").value;
         const roomInput = document.getElementById("roomInput").value;
         const joinRoomButton = document.getElementById("joinRoomButton");
@@ -201,7 +222,25 @@
         }
       }
 
-      validateForm();
+      validateJoinRoomForm();
+
+      function validateSendMessageForm() {
+        const messageInput = document
+          .getElementById("messageInput")
+          .value.trim();
+        const sendButton = document.getElementById("sendButton");
+        if (messageInput) {
+          sendButton.disabled = false;
+          sendButton.style.cursor = "pointer";
+          sendButton.style.opacity = "1";
+        } else {
+          sendButton.disabled = true;
+          sendButton.style.cursor = "not-allowed";
+          sendButton.style.opacity = "0.5";
+        }
+      }
+
+      validateSendMessageForm();
 
       socket.on("online users", (users) => {
         onlineTotal.textContent = `Online users: ${users.count}`;
