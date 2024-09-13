@@ -19,8 +19,13 @@ let roomMessages: {
   [key: string]: { sender: string; message: string; created: Date }[];
 } = {};
 
+let onlineUsers: number = 0;
+
 io.on("connection", (socket: Socket) => {
+  onlineUsers++;
   console.log("A user connected");
+  console.log(`Online users: ${onlineUsers}`);
+  io.emit("online users", { count: onlineUsers });
 
   socket.on("join room", (room: string) => {
     socket.join(room);
@@ -44,6 +49,8 @@ io.on("connection", (socket: Socket) => {
   );
 
   socket.on("disconnect", () => {
+    onlineUsers--;
+    io.emit("online users", { count: onlineUsers });
     console.log("User disconnected");
   });
 });
