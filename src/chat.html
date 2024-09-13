@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-gray-100 h-screen flex items-center justify-center">
-    <div class="bg-white shadow-lg rounded-lg p-6 w-full max-w-md space-y-4">
-      <div class="text-2xl font-bold text-center">Chat Room</div>
-
-      <div id="onlineTotal" class="text-center text-sm text-gray-500">0</div>
-
+    <div
+      id="homePage"
+      class="bg-white shadow-lg rounded-lg p-6 w-full max-w-md space-y-4"
+    >
+      <div class="text-2xl font-bold text-center">Join Chat Room</div>
       <div class="space-y-2">
         <input
           type="text"
@@ -32,8 +32,45 @@
           Join Room
         </button>
       </div>
+    </div>
 
-      <div class="space-y-2">
+    <div
+      id="chatPage"
+      class="hidden flex flex-col bg-white shadow-lg rounded-lg w-full max-w-md h-full"
+    >
+      <div class="text-2xl font-bold text-center p-4 relative">
+        <button
+          id="backButton"
+          class="absolute left-4 top-1/2 transform -translate-y-1/2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-gray-600 hover:text-gray-800"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        Chat Room
+      </div>
+
+      <div id="onlineTotal" class="text-center text-sm text-gray-500 p-2">
+        0
+      </div>
+      <ul
+        id="messages"
+        class="flex-grow overflow-y-auto bg-gray-50 p-4 border-t border-b border-gray-200 space-y-2"
+      >
+        <!-- Messages will appear here -->
+      </ul>
+      <div class="p-4 border-t border-gray-200">
         <input
           type="text"
           id="messageInput"
@@ -42,18 +79,11 @@
         />
         <button
           id="sendButton"
-          class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2"
         >
           Send Message
         </button>
       </div>
-
-      <ul
-        id="messages"
-        class="h-80 overflow-y-auto bg-gray-50 p-4 border border-gray-200 rounded space-y-2"
-      >
-        <!-- Messages will appear here -->
-      </ul>
     </div>
 
     <script src="https://cdn.socket.io/4.0.1/socket.io.js"></script>
@@ -64,6 +94,8 @@
       const roomInput = document.getElementById("roomInput");
       const joinRoomButton = document.getElementById("joinRoomButton");
       const onlineTotal = document.getElementById("onlineTotal");
+      const homePage = document.getElementById("homePage");
+      const chatPage = document.getElementById("chatPage");
 
       joinRoomButton.addEventListener("click", () => {
         const room = roomInput.value;
@@ -74,6 +106,8 @@
         }
 
         socket.emit("join room", room);
+        homePage.classList.add("hidden");
+        chatPage.classList.remove("hidden");
       });
 
       const messageInput = document.getElementById("messageInput");
@@ -104,6 +138,11 @@
 
         // Scroll to the latest message
         messages.scrollTop = messages.scrollHeight;
+      });
+
+      document.getElementById("backButton").addEventListener("click", () => {
+        chatPage.classList.add("hidden");
+        homePage.classList.remove("hidden");
       });
 
       socket.on("online users", (users) => {
