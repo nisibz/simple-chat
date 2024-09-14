@@ -260,13 +260,38 @@
         if (msg.message) {
           li.textContent = `${msg.sender}: ${msg.message} (${new Date(msg.created).toLocaleTimeString()})`;
         } else if (msg.fileUrl) {
-          const fileLink = document.createElement("a");
-          fileLink.href = msg.fileUrl;
-          fileLink.textContent = msg.originalFileName;
-          fileLink.className = "text-blue-500 underline";
-          li.textContent = `${msg.sender}: `;
-          li.appendChild(fileLink);
-          li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
+          if (msg.fileUrl.match(/\.(jpeg|jpg|gif|png)$/)) {
+            const img = document.createElement("img");
+            img.src = msg.fileUrl;
+            img.alt = msg.originalFileName;
+            img.className = "preview-image";
+            img.style.cursor = "pointer";
+            img.addEventListener("click", () => {
+              const zoomedImg = document.createElement("img");
+              zoomedImg.src = msg.fileUrl;
+              zoomedImg.alt = msg.originalFileName;
+              zoomedImg.className = "zoomed-image";
+              zoomedImg.style.position = "fixed";
+              zoomedImg.style.top = "50%";
+              zoomedImg.style.left = "50%";
+              zoomedImg.style.transform = "translate(-50%, -50%)";
+              document.body.appendChild(zoomedImg);
+              zoomedImg.addEventListener("click", () => {
+                document.body.removeChild(zoomedImg);
+              });
+            });
+            li.textContent = `${msg.sender}: `;
+            li.appendChild(img);
+            li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
+          } else {
+            const fileLink = document.createElement("a");
+            fileLink.href = msg.fileUrl;
+            fileLink.textContent = msg.originalFileName;
+            fileLink.className = "text-blue-500 underline";
+            li.textContent = `${msg.sender}: `;
+            li.appendChild(fileLink);
+            li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
+          }
         }
 
         messages.appendChild(li);
