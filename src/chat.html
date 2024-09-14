@@ -146,8 +146,15 @@
       sendButton.addEventListener("click", () => {
         const sender = senderInput.value;
         const message = messageInput.value.trim();
-        const created = new Date();
-        const newMsg = { sender: sender, message: message, created: created };
+        const uniqueId = localStorage.getItem("uniqueId") || socket.id; // Use stored unique ID or socket ID
+        if (!localStorage.getItem("uniqueId")) {
+          localStorage.setItem("uniqueId", uniqueId); // Store unique ID if not already stored
+        }
+        const newMsg = {
+          sender: sender,
+          message: message,
+          id: uniqueId,
+        };
         socket.emit("chat message", newMsg, roomInput.value);
         messageInput.value = "";
         validateSendMessageForm();
@@ -182,10 +189,11 @@
       socket.on("chat message", (msg) => {
         const li = document.createElement("li");
         const currentUser = senderInput.value;
+        const currentUserId = localStorage.getItem("uniqueId") || socket.id; // Get stored unique ID or socket ID
         const messageAlignment =
-          msg.sender === currentUser ? "text-right" : "text-left";
+          msg.id === currentUserId ? "text-right" : "text-left";
         const messageBgColor =
-          msg.sender === currentUser ? "bg-green-100" : "bg-blue-100";
+          msg.id === currentUserId ? "bg-green-100" : "bg-blue-100";
         li.className = `${messageAlignment} p-2 ${messageBgColor} rounded text-gray-700`;
         li.textContent = `${msg.sender}: ${msg.message} (${new Date(msg.created).toLocaleTimeString()})`;
         messages.appendChild(li);

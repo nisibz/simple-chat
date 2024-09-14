@@ -44,6 +44,7 @@ io.on("connection", (socket: Socket) => {
   socket.on(
     "chat message",
     (msg: { sender: string; message: string; created: Date }, room: string) => {
+      msg.created = new Date();
       if (!roomMessages[room]) {
         roomMessages[room] = [];
       }
