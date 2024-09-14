@@ -10,7 +10,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 app.get("/", (_req: Request, res: Response) => {
-  res.sendFile(__dirname + "/chat.html");
+  res.sendFile(__dirname + "/index.html");
 });
 
 let roomMessages: {
@@ -94,7 +94,6 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, "../uploads")); // Save files in 'uploads' folder
   },
   filename: function (_req, file, cb) {
-    console.log(file.originalname.split("."));
     const uniqueName = `${Date.now()}-${file.originalname}`; // Use current date and time + original file name
     cb(null, uniqueName);
   },
