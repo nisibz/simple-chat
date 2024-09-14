@@ -102,13 +102,37 @@
         <!-- Messages will appear here -->
       </ul>
       <div class="p-4 border-t border-gray-200">
-        <input
-          type="text"
-          id="messageInput"
-          placeholder="Type your message..."
-          class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          oninput="validateSendMessageForm()"
-        />
+        <div class="flex items-center">
+          <label for="fileUpload" class="cursor-pointer">
+            <svg
+              class="w-6 h-6 text-gray-600 hover:text-gray-800"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v16h16V4H4zm4 8h8m-4-4v8"
+              ></path>
+            </svg>
+          </label>
+          <input
+            type="file"
+            id="fileUpload"
+            class="hidden"
+            onchange="uploadFile()"
+          />
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 mx-2"
+            oninput="validateSendMessageForm()"
+          />
+        </div>
         <button
           id="sendButton"
           class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2"
@@ -142,6 +166,43 @@
         homePage.classList.add("hidden");
         chatPage.classList.remove("hidden");
       });
+
+      function uploadFile() {
+        const fileInput = document.getElementById("fileUpload");
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+
+        fetch(`${window.location}upload`, {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            sendFileUrl(data.fileUrl, file.name); // Send the file URL and original file name after upload success
+          })
+          .catch((error) => {
+            console.error("Error uploading file:", error);
+          });
+      }
+
+      function sendFileUrl(fileUrl, originalFileName) {
+        const sender = senderInput.value;
+        const uniqueId = localStorage.getItem("uniqueId") || socket.id; // Use stored unique ID or socket ID
+        if (!localStorage.getItem("uniqueId")) {
+          localStorage.setItem("uniqueId", uniqueId); // Store unique ID if not already stored
+        }
+        const newMsg = {
+          sender: sender,
+          id: uniqueId,
+          fileUrl: fileUrl, // Include the file URL in the message
+          originalFileName: originalFileName, // Include the original file name in the message
+        };
+        socket.emit("chat message", newMsg, roomInput.value);
+        messageInput.value = "";
+        validateSendMessageForm();
+        messageInput.focus();
+      }
 
       sendButton.addEventListener("click", () => {
         const sender = senderInput.value;
@@ -195,7 +256,19 @@
         const messageBgColor =
           msg.id === currentUserId ? "bg-green-100" : "bg-blue-100";
         li.className = `${messageAlignment} p-2 ${messageBgColor} rounded text-gray-700`;
-        li.textContent = `${msg.sender}: ${msg.message} (${new Date(msg.created).toLocaleTimeString()})`;
+
+        if (msg.message) {
+          li.textContent = `${msg.sender}: ${msg.message} (${new Date(msg.created).toLocaleTimeString()})`;
+        } else if (msg.fileUrl) {
+          const fileLink = document.createElement("a");
+          fileLink.href = msg.fileUrl;
+          fileLink.textContent = msg.originalFileName;
+          fileLink.className = "text-blue-500 underline";
+          li.textContent = `${msg.sender}: `;
+          li.appendChild(fileLink);
+          li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
+        }
+
         messages.appendChild(li);
         messages.scrollTop = messages.scrollHeight;
       });
