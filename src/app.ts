@@ -3,11 +3,14 @@ import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import multer from "multer";
 import path from "path";
+import log from "./middlewares/Log";
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
+
+app.use(log.checkTraffic);
 
 const uploadFile = (req: Request, res: Response) => {
   if (!req.file) {
