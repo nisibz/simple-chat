@@ -13,9 +13,15 @@ app.get("/", (_req: Request, res: Response) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-let roomMessages: {
-  [key: string]: { sender: string; message: string; created: Date }[];
-} = {};
+interface Message {
+  sender: string;
+  message?: string;
+  fileUrl?: string;
+  originalFileName?: string;
+  created: Date;
+}
+
+let roomMessages: { [key: string]: Message[] } = {};
 
 let onlineUsers: number = 0;
 
@@ -41,17 +47,14 @@ io.on("connection", (socket: Socket) => {
       .emit("room members", io.sockets.adapter.rooms.get(room)?.size || 0);
   });
 
-  socket.on(
-    "chat message",
-    (msg: { sender: string; message: string; created: Date }, room: string) => {
-      msg.created = new Date();
-      if (!roomMessages[room]) {
-        roomMessages[room] = [];
-      }
-      roomMessages[room].push(msg);
-      io.to(room).emit("chat message", msg);
-    },
-  );
+  socket.on("chat message", (msg: Message, room: string) => {
+    msg.created = new Date();
+    if (!roomMessages[room]) {
+      roomMessages[room] = [];
+    }
+    roomMessages[room].push(msg);
+    io.to(room).emit("chat message", msg);
+  });
 
   socket.on("clear chat", (room: string) => {
     if (roomMessages[room]) {
