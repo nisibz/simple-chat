@@ -9,8 +9,45 @@ const server = createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
+const uploadFile = (req: Request, res: Response) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  // Get the uploaded file info
+  const file = req.file;
+  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
+
+  return res.status(200).json({
+    message: "File uploaded successfully",
+    fileUrl: fileUrl,
+  });
+};
+
+// Multer configuration for file storage (accepts all file types)
+const storage = multer.diskStorage({
+  destination: function (_req, _file, cb) {
+    cb(null, path.join(__dirname, "../uploads")); // Save files in 'uploads' folder
+  },
+  filename: function (_req, file, cb) {
+    const uniqueName = `${Date.now()}-${file.originalname}`; // Use current date and time + original file name
+    cb(null, uniqueName);
+  },
+});
+
+// Multer middleware to handle file upload
+const upload = multer({ storage: storage });
+
 app.get("/", (_req: Request, res: Response) => {
   res.sendFile(__dirname + "/index.html");
+});
+
+// Route for uploading any file
+app.post("/upload", upload.single("file"), uploadFile);
+
+app.get("/uploads/:file", (req: Request, res: Response) => {
+  const fileName = req.params.file;
+  res.sendFile(path.join(__dirname, "../uploads", fileName));
 });
 
 interface Message {
@@ -74,43 +111,6 @@ io.on("connection", (socket: Socket) => {
         .emit("room members", io.sockets.adapter.rooms.get(room)?.size || 0);
     });
   });
-});
-
-const uploadFile = (req: Request, res: Response) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
-  }
-
-  // Get the uploaded file info
-  const file = req.file;
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
-
-  return res.status(200).json({
-    message: "File uploaded successfully",
-    fileUrl: fileUrl,
-  });
-};
-
-// Multer configuration for file storage (accepts all file types)
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, path.join(__dirname, "../uploads")); // Save files in 'uploads' folder
-  },
-  filename: function (_req, file, cb) {
-    const uniqueName = `${Date.now()}-${file.originalname}`; // Use current date and time + original file name
-    cb(null, uniqueName);
-  },
-});
-
-// Multer middleware to handle file upload
-const upload = multer({ storage: storage });
-
-// Route for uploading any file
-app.post("/upload", upload.single("file"), uploadFile);
-
-app.get("/uploads/:file", (req: Request, res: Response) => {
-  const fileName = req.params.file;
-  res.sendFile(path.join(__dirname, "../uploads", fileName));
 });
 
 server.listen(PORT, () => {
