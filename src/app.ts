@@ -4,6 +4,7 @@ import { Server, Socket } from "socket.io";
 import multer from "multer";
 import path from "path";
 import log from "./middlewares/Log";
+import logger from "./utils/Winston";
 
 const app = express();
 const server = createServer(app);
@@ -66,10 +67,12 @@ let roomMessages: { [key: string]: Message[] } = {};
 let onlineUsers: number = 0;
 
 io.on("connection", (socket: Socket) => {
+  logger.info(`A user ${socket.id} connected`);
   onlineUsers++;
   io.emit("online users", { count: onlineUsers });
 
   socket.on("join room", (room: string) => {
+    logger.info(`User ${socket.id} joined room: ${room}`);
     socket.join(room);
     if (!roomMessages[room]) {
       roomMessages[room] = [];
@@ -81,6 +84,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("leave room", (room) => {
+    logger.info(`User ${socket.id} left room: ${room}`);
     socket.leave(room);
     socket
       .to(room)
@@ -88,6 +92,9 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("chat message", (msg: Message, room: string) => {
+    logger.info(
+      `Message received from ${msg.sender}(${socket.id}) in room: ${room} : ${msg.message || msg.fileUrl}`,
+    );
     msg.created = new Date();
     if (!roomMessages[room]) {
       roomMessages[room] = [];
@@ -97,6 +104,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("clear chat", (room: string) => {
+    logger.info(`Chat cleared from ${socket.id} in room: ${room}`);
     if (roomMessages[room]) {
       delete roomMessages[room];
       io.to(room).emit("chat cleared");
@@ -104,6 +112,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("disconnect", () => {
+    logger.info(`A user ${socket.id} disconnected`);
     onlineUsers--;
     io.emit("online users", { count: onlineUsers });
 
