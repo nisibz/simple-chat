@@ -46,7 +46,7 @@
 
     <div
       id="chatPage"
-      class="hidden flex flex-col bg-white shadow-lg rounded-lg w-full max-w-md h-full"
+      class="hidden flex flex-col bg-white shadow-lg rounded-lg w-full h-full"
     >
       <div class="text-2xl font-bold text-center p-4 relative">
         <button
@@ -279,9 +279,32 @@
               zoomedImg.addEventListener("click", () => {
                 document.body.removeChild(zoomedImg);
               });
+              zoomedImg.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+              });
+            });
+            img.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+            });
+            img.addEventListener("touchstart", (e) => {
+              e.preventDefault(); // Prevent long-press
             });
             li.textContent = `${msg.sender}: `;
             li.appendChild(img);
+            li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
+          } else if (msg.fileUrl.match(/\.(mp4|webm|ogg|mov|MOV)$/)) {
+            const video = document.createElement("video");
+            video.src = msg.fileUrl;
+            video.controls = true; // แสดงปุ่มควบคุม
+            video.className = "video-preview";
+            video.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+            });
+            video.addEventListener("touchstart", (e) => {
+              e.preventDefault(); // Prevent long-press
+            });
+            li.textContent = `${msg.sender}: `;
+            li.appendChild(video);
             li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
           } else {
             const fileLink = document.createElement("a");
