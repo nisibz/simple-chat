@@ -116,17 +116,18 @@ const handleChatMessage =
     }
   };
 
-const handleClearChat = (socket: Socket) => async (room: string) => {
-  logger.info(`Chat cleared from ${socket.id} in room: ${room}`);
-  try {
-    await prisma.message.deleteMany({
-      where: { room },
-    });
-    io.to(room).emit("chat cleared");
-  } catch (error) {
-    logger.error("Error clearing chat:", error);
-  }
-};
+const handleClearChat =
+  (socket: Socket) => async (room: string, user: string) => {
+    logger.info(`Chat cleared from ${socket.id} in room: ${room}`);
+    try {
+      await prisma.message.deleteMany({
+        where: { room },
+      });
+      io.to(room).emit("chat cleared", user);
+    } catch (error) {
+      logger.error("Error clearing chat:", error);
+    }
+  };
 
 io.on("connection", (socket: Socket) => {
   logger.info(`User connected: ${socket.id}`);
