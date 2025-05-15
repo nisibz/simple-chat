@@ -3,41 +3,39 @@ import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import multer from "multer";
 import path from "path";
-import log from "./middlewares/Log";
-import logger from "./utils/Winston";
+// import log from "./middlewares/Log";
+// import logger from "./utils/Winston";
+import { uploadFileToS3 } from "./utils/s3";
+import dotenv from "dotenv";
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
-app.use(log.checkTraffic);
+dotenv.config();
+// app.use(log.checkTraffic);
 
-const uploadFile = (req: Request, res: Response) => {
+const uploadFile = async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  // Get the uploaded file info
-  const file = req.file;
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
+  try {
+    const data = await uploadFileToS3(req.file);
+    const fileUrl = data.Location; // Get the file URL from S3 response
 
-  return res.status(200).json({
-    message: "File uploaded successfully",
-    fileUrl: fileUrl,
-  });
+    return res.status(200).json({
+      message: "File uploaded successfully",
+      fileUrl: fileUrl,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Error uploading file", error });
+  }
 };
 
-// Multer configuration for file storage (accepts all file types)
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, path.join(__dirname, "../uploads")); // Save files in 'uploads' folder
-  },
-  filename: function (_req, file, cb) {
-    const uniqueName = `${Date.now()}-${file.originalname}`; // Use current date and time + original file name
-    cb(null, uniqueName);
-  },
-});
+// Multer configuration for memory storage (for S3 uploads)
+const storage = multer.memoryStorage(); // Use memory storage for S3 uploads
 
 // Multer middleware to handle file upload
 const upload = multer({ storage: storage });
@@ -67,12 +65,12 @@ let roomMessages: { [key: string]: Message[] } = {};
 let onlineUsers: number = 0;
 
 io.on("connection", (socket: Socket) => {
-  logger.info(`A user ${socket.id} connected`);
+  // logger.info(`A user ${socket.id} connected`);
   onlineUsers++;
   io.emit("online users", { count: onlineUsers });
 
   socket.on("join room", (room: string) => {
-    logger.info(`User ${socket.id} joined room: ${room}`);
+    // logger.info(`User ${socket.id} joined room: ${room}`);
     socket.join(room);
     if (!roomMessages[room]) {
       roomMessages[room] = [];
@@ -84,7 +82,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("leave room", (room) => {
-    logger.info(`User ${socket.id} left room: ${room}`);
+    // logger.info(`User ${socket.id} left room: ${room}`);
     socket.leave(room);
     socket
       .to(room)
@@ -92,9 +90,9 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("chat message", (msg: Message, room: string) => {
-    logger.info(
-      `Message received from ${msg.sender}(${socket.id}) in room: ${room} : ${msg.message || msg.fileUrl}`,
-    );
+    // logger.info(
+    //   `Message received from ${msg.sender}(${socket.id}) in room: ${room} : ${msg.message || msg.fileUrl}`,
+    // );
     msg.created = new Date();
     if (!roomMessages[room]) {
       roomMessages[room] = [];
@@ -104,7 +102,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("clear chat", (room: string) => {
-    logger.info(`Chat cleared from ${socket.id} in room: ${room}`);
+    // logger.info(`Chat cleared from ${socket.id} in room: ${room}`);
     if (roomMessages[room]) {
       delete roomMessages[room];
       io.to(room).emit("chat cleared");
@@ -112,7 +110,7 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("disconnect", () => {
-    logger.info(`A user ${socket.id} disconnected`);
+    // logger.info(`A user ${socket.id} disconnected`);
     onlineUsers--;
     io.emit("online users", { count: onlineUsers });
 
