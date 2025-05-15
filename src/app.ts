@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express, { Request, Response } from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
@@ -6,14 +9,11 @@ import path from "path";
 import log from "./middlewares/Log";
 import logger from "./utils/Winston";
 import { uploadFileToS3 } from "./utils/s3";
-import dotenv from "dotenv";
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
-
-dotenv.config();
 app.use(log.checkTraffic);
 
 const uploadFile = async (req: Request, res: Response) => {

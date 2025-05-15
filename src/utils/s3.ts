@@ -1,10 +1,21 @@
-import AWS from "aws-sdk";
+import { S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  region: process.env.AWS_REGION!,
-});
+// Initialize S3 client lazily
+let s3Client: S3Client;
+
+function getS3Client() {
+  if (!s3Client) {
+    s3Client = new S3Client({
+      region: process.env.AWS_REGION!,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+  }
+  return s3Client;
+}
 
 export const uploadFileToS3 = async (file: Express.Multer.File) => {
   try {
@@ -13,11 +24,15 @@ export const uploadFileToS3 = async (file: Express.Multer.File) => {
       Key: `${Date.now()}-${file.originalname}`,
       Body: file.buffer,
       ContentType: file.mimetype,
-      ACL: 'public-read'
+      ACL: "public-read" as const,
     };
 
-    const result = await s3.upload(params).promise();
-    // console.log('File uploaded successfully:', result.Location);
+    const upload = new Upload({
+      client: getS3Client(),
+      params,
+    });
+
+    const result = await upload.done();
     return result;
   } catch (error) {
     console.error("Error uploading file:", error);
