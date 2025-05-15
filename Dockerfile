@@ -1,20 +1,11 @@
-FROM node:16-alpine AS builder
+FROM node:20-alpine
 
-WORKDIR /source
+WORKDIR /app
 
-COPY ./package* .
-RUN npm install
+COPY package.json yarn.lock* ./
+RUN yarn
 
-COPY . .
-RUN npm run build
+COPY prisma/schema.prisma ./prisma/schema.prisma
+RUN npx prisma generate
 
-FROM node:16-alpine AS production
-
-WORKDIR /source
-
-COPY --from=builder /source/dist ./dist
-COPY --from=builder /source/node_modules ./node_modules
-COPY --from=builder /source/package.json .
-COPY --from=builder /source/src/index.html ./dist/index.html
-
-CMD [ "node", "dist/app.js" ]
+CMD ["yarn", "dev"]

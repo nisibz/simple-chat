@@ -142,26 +142,56 @@
       </div>
     </div>
 
-    <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      id="confirmModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
       <div class="bg-white rounded-lg p-6 max-w-sm w-full">
         <h3 class="text-lg font-bold mb-4">Confirm Clear Chat</h3>
-        <p class="mb-6">Are you sure you want to clear all messages in this room?</p>
+        <p class="mb-6">
+          Are you sure you want to clear all messages in this room?
+        </p>
         <div class="flex justify-end space-x-4">
-          <button id="cancelClear" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100">
+          <button
+            id="cancelClear"
+            class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+          >
             Cancel
           </button>
-          <button id="confirmClear" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+          <button
+            id="confirmClear"
+            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
             Clear
           </button>
         </div>
       </div>
     </div>
 
-    <div id="uploadLoading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      id="uploadLoading"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
       <div class="bg-white rounded-lg p-6 flex items-center space-x-2">
-        <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <svg
+          class="animate-spin h-8 w-8 text-indigo-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
         </svg>
         <span class="text-gray-700">Uploading file...</span>
       </div>
@@ -182,6 +212,14 @@
       const messages = document.getElementById("messages");
       const clearChatButton = document.getElementById("clearChatButton");
 
+      const getUserId = () => {
+        const uniqueId = localStorage.getItem("uniqueId") || socket.id;
+        if (!localStorage.getItem("uniqueId")) {
+          localStorage.setItem("uniqueId", uniqueId);
+        }
+        return uniqueId;
+      };
+
       joinRoomButton.addEventListener("click", () => {
         const room = roomInput.value;
         while (messages.firstChild) {
@@ -192,48 +230,55 @@
         chatPage.classList.remove("hidden");
       });
 
+      const handleFileUpload = async (file) => {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch(`${window.location}upload`, {
+            method: "POST",
+            body: formData,
+          });
+
+          return await response.json();
+        } catch (error) {
+          console.error("Upload error:", error);
+          throw error;
+        }
+      };
+
       function uploadFile() {
         const fileInput = document.getElementById("fileUpload");
         const loadingIndicator = document.getElementById("uploadLoading");
         const file = fileInput.files[0];
-        
+
         if (!file) return;
 
-        loadingIndicator.classList.remove("hidden"); // Show loading
-        fileInput.disabled = true; // Disable input during upload
+        loadingIndicator.classList.remove("hidden");
+        fileInput.disabled = true;
 
-        const formData = new FormData();
-        formData.append("file", file);
-
-        fetch(`${window.location}upload`, {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => response.json())
+        handleFileUpload(file)
           .then((data) => {
-            sendFileUrl(data.fileUrl, file.name); // Send the file URL and original file name after upload success
+            sendFileUrl(data.fileUrl, file.name);
           })
           .catch((error) => {
             console.error("Error uploading file:", error);
           })
           .finally(() => {
-            loadingIndicator.classList.add("hidden"); // Hide loading
-            fileInput.disabled = false; // Re-enable input
-            fileInput.value = ""; // Clear selected file
+            loadingIndicator.classList.add("hidden");
+            fileInput.disabled = false;
+            fileInput.value = "";
           });
       }
 
       function sendFileUrl(fileUrl, originalFileName) {
         const sender = senderInput.value;
-        const uniqueId = localStorage.getItem("uniqueId") || socket.id; // Use stored unique ID or socket ID
-        if (!localStorage.getItem("uniqueId")) {
-          localStorage.setItem("uniqueId", uniqueId); // Store unique ID if not already stored
-        }
+        const uniqueId = getUserId();
         const newMsg = {
           sender: sender,
           id: uniqueId,
-          fileUrl: fileUrl, // Include the file URL in the message
-          originalFileName: originalFileName, // Include the original file name in the message
+          fileUrl: fileUrl,
+          originalFileName: originalFileName,
         };
         socket.emit("chat message", newMsg, roomInput.value);
         messageInput.value = "";
@@ -241,13 +286,13 @@
         messageInput.focus();
       }
 
-      sendButton.addEventListener("click", () => {
+      const handleMessageSend = () => {
         const sender = senderInput.value;
         const message = messageInput.value.trim();
-        const uniqueId = localStorage.getItem("uniqueId") || socket.id; // Use stored unique ID or socket ID
-        if (!localStorage.getItem("uniqueId")) {
-          localStorage.setItem("uniqueId", uniqueId); // Store unique ID if not already stored
-        }
+
+        if (!message) return;
+
+        const uniqueId = getUserId();
         const newMsg = {
           sender: sender,
           message: message,
@@ -257,11 +302,13 @@
         messageInput.value = "";
         validateSendMessageForm();
         messageInput.focus();
-      });
+      };
+
+      sendButton.addEventListener("click", handleMessageSend);
 
       messageInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
-          sendButton.click();
+          handleMessageSend();
         }
       });
 
@@ -278,92 +325,109 @@
       });
 
       clearChatButton.addEventListener("click", () => {
-        document.getElementById('confirmModal').classList.remove('hidden');
+        document.getElementById("confirmModal").classList.remove("hidden");
       });
 
-      document.getElementById('cancelClear').addEventListener('click', () => {
-        document.getElementById('confirmModal').classList.add('hidden');
+      document.getElementById("cancelClear").addEventListener("click", () => {
+        document.getElementById("confirmModal").classList.add("hidden");
       });
 
-      document.getElementById('confirmClear').addEventListener('click', () => {
+      document.getElementById("confirmClear").addEventListener("click", () => {
         while (messages.firstChild) {
           messages.removeChild(messages.firstChild);
         }
         socket.emit("clear chat", roomInput.value);
-        document.getElementById('confirmModal').classList.add('hidden');
+        document.getElementById("confirmModal").classList.add("hidden");
       });
 
-      socket.on("chat message", (msg) => {
+      const createFileElement = (msg) => {
+        if (msg.fileUrl.match(/\.(jpeg|jpg|gif|png)$/)) {
+          const img = document.createElement("img");
+          img.src = msg.fileUrl;
+          img.alt = msg.originalFileName;
+          img.className = "preview-image";
+          img.style.cursor = "pointer";
+
+          img.addEventListener("click", () => {
+            const zoomedImg = document.createElement("img");
+            zoomedImg.src = msg.fileUrl;
+            zoomedImg.alt = msg.originalFileName;
+            zoomedImg.className = "zoomed-image";
+            zoomedImg.style.position = "fixed";
+            zoomedImg.style.top = "50%";
+            zoomedImg.style.left = "50%";
+            zoomedImg.style.transform = "translate(-50%, -50%)";
+            document.body.appendChild(zoomedImg);
+
+            zoomedImg.addEventListener("click", () => {
+              document.body.removeChild(zoomedImg);
+            });
+
+            zoomedImg.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+            });
+          });
+
+          img.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+          });
+
+          img.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+          });
+
+          return img;
+        } else if (msg.fileUrl.match(/\.(mp4|webm|ogg|mov|MOV)$/)) {
+          const video = document.createElement("video");
+          video.src = msg.fileUrl;
+          video.controls = true;
+          video.className = "video-preview";
+
+          video.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+          });
+
+          video.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+          });
+
+          return video;
+        } else {
+          const fileLink = document.createElement("a");
+          fileLink.href = msg.fileUrl;
+          fileLink.textContent = msg.originalFileName;
+          fileLink.className = "text-blue-500 underline";
+          return fileLink;
+        }
+      };
+
+      const createMessageElement = (msg) => {
         const li = document.createElement("li");
-        const currentUser = senderInput.value;
-        const currentUserId = localStorage.getItem("uniqueId") || socket.id; // Get stored unique ID or socket ID
-        const messageAlignment =
-          msg.id === currentUserId ? "text-right" : "text-left";
-        const messageBgColor =
-          msg.id === currentUserId ? "bg-green-100" : "bg-blue-100";
-        li.className = `${messageAlignment} p-2 ${messageBgColor} rounded text-gray-700`;
+        const currentUserId = getUserId();
+        const isCurrentUser = msg.id === currentUserId;
+
+        li.className = `p-2 rounded text-gray-700 ${
+          isCurrentUser ? "text-right bg-green-100" : "text-left bg-blue-100"
+        }`;
+
+        const timeStamp = ` (${new Date(msg.created).toLocaleTimeString()})`;
+
+        li.textContent = `${msg.sender}: `;
 
         if (msg.message) {
-          li.textContent = `${msg.sender}: ${msg.message} (${new Date(msg.created).toLocaleTimeString()})`;
+          li.textContent += msg.message;
         } else if (msg.fileUrl) {
-          if (msg.fileUrl.match(/\.(jpeg|jpg|gif|png)$/)) {
-            const img = document.createElement("img");
-            img.src = msg.fileUrl;
-            img.alt = msg.originalFileName;
-            img.className = "preview-image";
-            img.style.cursor = "pointer";
-            img.addEventListener("click", () => {
-              const zoomedImg = document.createElement("img");
-              zoomedImg.src = msg.fileUrl;
-              zoomedImg.alt = msg.originalFileName;
-              zoomedImg.className = "zoomed-image";
-              zoomedImg.style.position = "fixed";
-              zoomedImg.style.top = "50%";
-              zoomedImg.style.left = "50%";
-              zoomedImg.style.transform = "translate(-50%, -50%)";
-              document.body.appendChild(zoomedImg);
-              zoomedImg.addEventListener("click", () => {
-                document.body.removeChild(zoomedImg);
-              });
-              zoomedImg.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-              });
-            });
-            img.addEventListener("contextmenu", (e) => {
-              e.preventDefault();
-            });
-            img.addEventListener("touchstart", (e) => {
-              e.preventDefault(); // Prevent long-press
-            });
-            li.textContent = `${msg.sender}: `;
-            li.appendChild(img);
-            li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
-          } else if (msg.fileUrl.match(/\.(mp4|webm|ogg|mov|MOV)$/)) {
-            const video = document.createElement("video");
-            video.src = msg.fileUrl;
-            video.controls = true; // แสดงปุ่มควบคุม
-            video.className = "video-preview";
-            video.addEventListener("contextmenu", (e) => {
-              e.preventDefault();
-            });
-            video.addEventListener("touchstart", (e) => {
-              e.preventDefault(); // Prevent long-press
-            });
-            li.textContent = `${msg.sender}: `;
-            li.appendChild(video);
-            li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
-          } else {
-            const fileLink = document.createElement("a");
-            fileLink.href = msg.fileUrl;
-            fileLink.textContent = msg.originalFileName;
-            fileLink.className = "text-blue-500 underline";
-            li.textContent = `${msg.sender}: `;
-            li.appendChild(fileLink);
-            li.append(` (${new Date(msg.created).toLocaleTimeString()})`);
-          }
+          const fileElement = createFileElement(msg);
+          li.appendChild(fileElement);
         }
 
-        messages.appendChild(li);
+        li.append(timeStamp);
+        return li;
+      };
+
+      socket.on("chat message", (msg) => {
+        const messageElement = createMessageElement(msg);
+        messages.appendChild(messageElement);
         messages.scrollTop = messages.scrollHeight;
       });
 

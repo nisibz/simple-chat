@@ -1,7 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
-// Initialize S3 client lazily
 let s3Client: S3Client;
 
 function getS3Client() {

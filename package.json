@@ -5,12 +5,16 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "prisma:migrate": "docker compose exec -it nodejs-app sh -c 'npx prisma migrate dev'",
+    "prisma:generate": "docker compose exec -it nodejs-app sh -c 'npx prisma generate'",
+    "prisma:reset": "docker compose exec -it nodejs-app sh -c 'npx prisma migrate reset'"
   },
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.810.0",
     "@aws-sdk/lib-storage": "^3.810.0",
+    "@prisma/client": "^6.8.0",
     "@types/multer": "^1.4.12",
     "dotenv": "^16.5.0",
     "express": "^4.21.0",
@@ -22,6 +26,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.4",
     "nodemon": "^3.1.10",
+    "prisma": "^6.8.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.2"
   }
